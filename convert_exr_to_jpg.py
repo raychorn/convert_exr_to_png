@@ -27,7 +27,9 @@ def convert_exr_to_jpg(exr_file, jpg_file):
     return True
 
 
+fpath = '/home/raychorn/images/'
+
 if __name__ == '__main__':
-    exr = "torus.exr"
-    jpg = "torus3.jpeg"
+    exr = os.path.join(fpath, 'V1-0001_CappySmack_Noodles00108000.exr')
+    jpg = "{}.jpeg".format(os.path.splitext(exr)[0])
     convert_exr_to_jpg(exr, jpg)

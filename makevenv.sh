@@ -11,15 +11,42 @@ DIR0="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 MODE=$1
 echo "MODE: $MODE - use something for parm1 to run this script manually."
 
-python39=$(which python)
+ARRAY=()
 
-if [ ! -f "$python39" ]; then
-    echo "python not found: $python39"
-    exit 1
-fi
+find_python(){
+    pythons=$1
+    PYTHONS=$(whereis $pythons)
+    for val in $PYTHONS; do
+        if [[ $val == *"/usr/bin/"* ]]; then
+            if [[ $val != *"-config"* ]]; then
+                ARRAY+=($val)
+            fi
+        fi
+    done
+}
+
+python39=$(which python3.10)
 
 v=$($python39 -c 'import sys; i=sys.version_info; print("{}{}{}".format(i.major,i.minor,i.micro))')
 
+if [[ -f $python39 ]]
+then
+    echo "7. Found $python39"
+fi
+
+if [[ $v != "310" ]]
+then
+    echo "8. Installing python3.10 latest."
+    apt update -y
+    apt install software-properties-common -y
+    echo -ne '\n' | add-apt-repository ppa:deadsnakes/ppa
+    apt install python3.10 -y
+	apt install python3.10-distutils -y
+    apt-get update -y && apt-get upgrade -y
+    apt --fix-broken install -y
+fi
+
+python39=$(which python3.10)
 pip3=$(which pip3)
 setuptools="0"
 
@@ -96,6 +123,29 @@ fi
 
 choice=$python39
 
+if [[ "$MODE." != "." ]]
+then
+    find_python python
+
+    v=$($python39 ./scripts/sort.py "${ARRAY[@]}")
+    ARRAY=()
+    ARRAY2=()
+    for val in $v; do
+        ARRAY+=($val)
+        x=$($val -c 'import sys; i=sys.version_info; print("{}.{}.{}".format(i.major,i.minor,i.micro))')
+        ARRAY2+=("$val $x")
+    done
+
+    PS3="Choose: "
+
+    select option in "${ARRAY2[@]}";
+    do
+        echo "Selected number: $REPLY"
+        choice=${ARRAY[$REPLY-1]}
+        break
+    done
+fi
+
 version=$($choice --version)
 echo "Use this -> $choice --> $version"
 
@@ -120,12 +170,6 @@ then
         echo "Cannot find python:$choice"
         exit 1
     fi
-    if [[ ! -f "$virtualenv" ]]
-    then
-        echo "Cannot find virtualenv:$virtualenv"
-        exit 1
-    fi
-    echo "$virtualenv --python $choice -v $VENV"
     $virtualenv --python $choice -v $VENV
 fi
 
